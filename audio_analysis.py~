@@ -1,0 +1,5 @@
+import librosa
+import os
+for file in os.listdir("./"):
+    if file.endswith(".mp3"):
+        print(file)
