@@ -14,7 +14,7 @@ import os
 data = {}
 sr=22000
 
-audio = librosa.util.example_audio_file()
+#audio = librosa.util.example_audio_file()
 
 features = {}
 mp3list = []
@@ -68,52 +68,72 @@ for file in os.listdir("./"):
 
         ## features generation
         ## this is a feature that runs on the octave
-        features[file]['chroma_mean'] = [np.mean(chroma, axis=1)] ##
-        features[file]['chroma_std'] = [np.std(chroma, axis=1)]
-        features[file]['mfccs_mean'] = [np.mean(mfccs, axis=1)]
-        features[file]['mfccs_std'] = [np.std(mfccs, axis=1)]
-        features[file]['cent_mean'] = [np.mean(cent)]
-        features[file]['cent_std'] = [np.std(cent)]
-        features[file]['cent_skew'] = [scipy.stats.skew(cent, axis=1)[0]]
-        features[file]['contrast_mean'] = [np.mean(contrast, axis=1)]
-        features[file]['contrast_std'] = [np.std(contrast, axis=1)]
-        features[file]['rolloff_mean'] = [np.mean(rolloff)]
-        features[file]['rolloff_std'] = [np.std(rolloff)]
-        features[file]['rolloff_skew'] = [scipy.stats.skew(rolloff, axis=1)[0]]
-        features[file]['zrate_mean'] = [np.mean(zrate)]
-        features[file]['zrate_std'] = [np.std(zrate)]
-        features[file]['zrate_skew'] = [scipy.stats.skew(zrate, axis=1)[0]]
-        features[file]['tempo'] = [tempo]
+        features[file]['chroma_mean'] = np.mean(chroma, axis=1) ##
+        features[file]['chroma_std'] = np.std(chroma, axis=1)
+        features[file]['mfccs_mean'] = np.mean(mfccs, axis=1)
+        features[file]['mfccs_std'] = np.std(mfccs, axis=1)
+        features[file]['cent_mean'] = np.mean(cent)
+        features[file]['cent_std'] = np.std(cent)
+        features[file]['cent_skew'] = scipy.stats.skew(cent, axis=1)[0]
+        features[file]['contrast_mean'] = np.mean(contrast, axis=1)
+        features[file]['contrast_std'] = np.std(contrast, axis=1)
+        features[file]['rolloff_mean'] = np.mean(rolloff)
+        features[file]['rolloff_std'] = np.std(rolloff)
+        features[file]['rolloff_skew'] = scipy.stats.skew(rolloff, axis=1)[0]
+        features[file]['zrate_mean'] = np.mean(zrate)
+        features[file]['zrate_std'] = np.std(zrate)
+        features[file]['zrate_skew'] = scipy.stats.skew(zrate, axis=1)[0]
+        features[file]['tempo'] = tempo
         
-
-print(features)
-f0 = mp3list[0]
 features_df = pd.DataFrame()
-for key in features[f0].keys():
-    print(key)
-    for kk in range(len(features[f0][key])):
-        name=f"{key}_{kk}"
-        features_df[name] = features[f0][key][kk]
-        print(name)
-
-
-print(features[f0]['chroma_mean'])
-
+for song in features.keys():
+    f0 = song
+    newrow={}
+    for key in features[f0].keys():
+        print(key)
+        if isinstance(features[f0][key], np.ndarray):
+            for kk in range(len(features[f0][key])):
+                name=f"{key}_{kk}"
+                print(features[f0][key][kk])
+                newrow[name] = features[f0][key][kk]
+                print(features[f0][key][kk])
+        else:
+            name = key
+            newrow[name] = features[f0][key]
+    features_df = pd.concat([features_df, pd.DataFrame([newrow])])
     
+print(features_df)
+
+
+from sklearn.decomposition import PCA
+import plotly.express as px
+
+pca = PCA()
+df = features_df
+df.index = features.keys()
+singer=['skordalos', 'psarantonis', 'psarantonis', 'psarantonis', 'skordalos', 'psarantonis', 'skordalos', 'skordalos']
+singercol=[]
+for s in singer:
+    if s is 'skordalos':
+        singercol.append('red')
+    elif s is 'psarantonis':
+        singercol.append('blue')
         
-        fig, ax = plt.subplots()
-        fig.set_size_inches(15, 5)
-        ax.set_ylabel("Time difference (s)")
-        ax.set_xlabel("Beats")
-        g=sns.barplot(beat_nums, beat_time_diff, palette="BuGn_d",ax=ax)
-        g=g.set(xticklabels=[])
-        plt.savefig(f"beats_{file}.pdf")
-##len(data['psarantonis1.mp3'][0])
+df_normalized=(df - df.mean()) / df.std()
 
-secs=np.size(y)/sr
-print('Audio Length: '+str(secs)+' s')
-IPython.display.Audio(audio)
+components = pca.fit_transform(df_normalized)
+labels = {
+    str(i): f"PC {i+1} ({var:.1f}%)"
+    for i, var in enumerate(pca.explained_variance_ratio_ * 100)
+}
 
+fig = px.scatter_matrix(
+    components,
+    labels=labels,
+    dimensions=range(4),
+    color=singercol
+)
+fig.update_traces(diagonal_visible=False)
+fig.show()
 
-plt.figure(figsize=(14, 5))
-librosa.display.waveplot(x, sr=sr)
+pca.fit(df_normalized)
