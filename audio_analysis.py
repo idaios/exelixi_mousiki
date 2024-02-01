@@ -111,7 +111,11 @@ import plotly.express as px
 pca = PCA()
 df = features_df
 df.index = features.keys()
-singer=['skordalos', 'psarantonis', 'psarantonis', 'psarantonis', 'skordalos', 'psarantonis', 'skordalos', 'skordalos']
+df.index
+singer=[ind[0:4] for ind in df.index]
+##singer=[ind for ind in df.index]
+singer
+##singer=['skordalos', 'psarantonis', 'psarantonis', 'psarantonis', 'skordalos', 'psarantonis', 'skordalos', 'skordalos']
 singercol=[]
 for s in singer:
     if s is 'skordalos':
@@ -131,9 +135,9 @@ fig = px.scatter_matrix(
     components,
     labels=labels,
     dimensions=range(4),
-    color=singercol
+    color=singer
 )
 fig.update_traces(diagonal_visible=False)
 fig.show()
 
-pca.fit(df_normalized)
+
