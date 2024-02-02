@@ -10,28 +10,34 @@ import scipy
 import matplotlib.pyplot as plt
 import seaborn as sns
 import os
+import re
 
 data = {}
 sr=22000
 
 #audio = librosa.util.example_audio_file()
+pattern = re.compile(r'psarantonis|skordalos|hpeirwtika')
+#pattern2 = re.compile(r'hpeirwtika')
+
 
 features = {}
 mp3list = []
 fileList = os.listdir("./")
 for f in fileList:
-    if f.endswith(".mp3"):
+    if f.endswith(".mp3") and pattern.match(f):
         mp3list.append(f)
-mp3list
 
-for file in os.listdir("./"):
+mp3list
+        
+
+for file in mp3list:
     if file.endswith(".mp3"):
         features[file] = {}
         print(file)
-        data[file],sr = librosa.load(file, sr=sr)
-        y = data[file]
+        audio,sr = librosa.load(file, sr=sr)
+        y = audio
         print('Audio Sampling Rate: '+str(sr)+' samples/sec')
-        print('Total Samples: '+str(np.size(data[file])))
+        print('Total Samples: '+str(np.size(audio)))
         secs=np.size(y)/sr
         print('Audio Length: '+str(secs)+' s')
         ##IPython.display.Audio(y)
@@ -84,9 +90,12 @@ for file in os.listdir("./"):
         features[file]['zrate_std'] = np.std(zrate)
         features[file]['zrate_skew'] = scipy.stats.skew(zrate, axis=1)[0]
         features[file]['tempo'] = tempo
-        
+
+ll=list(features.keys())
+
 features_df = pd.DataFrame()
-for song in features.keys():
+for song in ll:
+    print(song)
     f0 = song
     newrow={}
     for key in features[f0].keys():
@@ -105,6 +114,7 @@ for song in features.keys():
 print(features_df)
 
 
+
 from sklearn.decomposition import PCA
 import plotly.express as px
 
@@ -118,9 +128,9 @@ singer
 ##singer=['skordalos', 'psarantonis', 'psarantonis', 'psarantonis', 'skordalos', 'psarantonis', 'skordalos', 'skordalos']
 singercol=[]
 for s in singer:
-    if s is 'skordalos':
+    if s == 'skordalos':
         singercol.append('red')
-    elif s is 'psarantonis':
+    elif s == 'psarantonis':
         singercol.append('blue')
         
 df_normalized=(df - df.mean()) / df.std()
@@ -140,4 +150,7 @@ fig = px.scatter_matrix(
 fig.update_traces(diagonal_visible=False)
 fig.show()
 
+
+fig2 = px.scatter(components, x=0, y=1, color=singer, text=df.index)
+fig2.show()
 
